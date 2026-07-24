@@ -1,44 +1,34 @@
-"""
-Blogger RSS Feed Parser
-Extracts all post URLs from a Blogger RSS/Atom feed
-"""
-
 import feedparser
-import logging
-from typing import List, Optional
 from urllib.parse import urlparse
-import requests
-from datetime import datetime
-
 
 class BloggerFeedParser:
-    def __init__(self, feed_url: str):
-        """Initialize the feed parser."""
+    def __init__(self, feed_url, blog_url):
         self.feed_url = feed_url
-        self.logger = logging.getLogger(__name__)
-        
-    def get_all_post_urls(self, max_results: int = 500) -> List[str]:
-        """
-        Get all post URLs from the Blogger feed.
-        
-        Args:
-            max_results: Maximum number of results to fetch
-            
-        Returns:
-            List of post URLs
-        """
+        self.blog_url = urlparse(blog_url).netloc
+
+    def get_urls(self):
+        feed = feedparser.parse(self.feed_url)
         urls = []
         
-        try:
-            # Parse the feed
-            feed = feedparser.parse(self.feed_url)
-            
-            if feed.bozo:
-                self.logger.error(f"Error parsing feed: {feed.bozo_exception}")
-                return urls
-                
-            # Extract URLs from entries
-            for entry in feed.entries:
-                if hasattr(entry, 'link'):
-                    url = entry.linl
+        # Extract URLs from entries
+        for entry in feed.entries:
+            if hasattr(entry, 'link'):
+                url = entry.link
+                # Filter out non-post URLs
+                if self._is_valid_post_url(url):
+                    urls.append(url)
+        return urls
 
+    def _is_valid_post_url(self, url):
+        parsed_url = urlparse(url)
+        if parsed_url.netloc != self.blog_url:
+            return False
+            
+        path = parsed_url.path
+        if any(x in path for x in ['/search', '/archive']):
+            return False
+            
+        if path.endswith('.html'):
+            return True
+            
+        return False
