@@ -5,7 +5,7 @@ class BloggerFeedParser:
     def __init__(self, feed_url):
         self.feed_url = feed_url
 
-    def get_urls(self):
+    def get_all_post_urls(self):
         feed = feedparser.parse(self.feed_url)
         urls = []
         
